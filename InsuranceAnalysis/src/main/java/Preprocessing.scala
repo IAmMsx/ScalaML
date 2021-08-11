@@ -44,5 +44,36 @@ object Preprocessing {
     validationData.cache()
 
 
+    val testData: Dataset[Row] = testInput.sample(withReplacement = false, testSample).cache()
+
+    // 识别分类列(数据集分 分类列与数据列)
+    def isCateg(c: String): Boolean = c.startsWith("cat")
+
+    def categNewCol(c: String): String = if (isCateg(c)) s"idx_${c}" else c
+
+    // 删除太多类别的列
+    def removeTooManyCategs(c: String): Boolean = !(c matches "cat(109$|110$|112$|113$|116$)")
+
+    // 选择特征列 删除Label与ID列
+    def onlyFeatureCols(c: String): Boolean = !(c matches "id|label")
+
+    val featureCols: Array[String] = trainingData.columns
+      .filter(removeTooManyCategs)
+      .filter(onlyFeatureCols)
+      .map(categNewCol)
+
+    // 不太懂 *****
+    val stringIndexerStages: Array[StringIndexerModel] = trainingData.columns.filter(isCateg)
+      .map(c => new StringIndexer()
+        .setInputCol(c) // 设置输入列
+        .setOutputCol(categNewCol(c)) //设置输出列
+        .fit(trainInput.union(testInput.select(c)))
+      )
+
+    // 将给定的列转换为单个向量列
+    val assembler: VectorAssembler = new VectorAssembler()
+      .setInputCols(featureCols)
+      .setOutputCol("features")
+
 
 }
