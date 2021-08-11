@@ -1,6 +1,6 @@
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.spark.ml.regression.LinearRegression
+import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
 import org.apache.spark.mllib.evaluation.RegressionMetrics
 import org.apache.spark.sql.Row
@@ -9,6 +9,7 @@ object LR {
     def main(args: Array[String]): Unit = {
         val spark = SparkSessionCreate.createSession()
         import spark.implicits._
+
 
         // 超参数
         val numFolds = 10 // 交叉验证折数
@@ -20,7 +21,7 @@ object LR {
         // 创建LR估计器
         val model = new LinearRegression().setFeaturesCol("features").setLabelCol("label")
 
-        println("Building ML piprline") // 构建管道估计器
+        println("Building ML pipeline") // 构建管道估计器
         val pipeline: Pipeline = new Pipeline()
           .setStages((Preprocessing.stringIndexerStages :+ Preprocessing.assembler) :+ model)
 
@@ -45,9 +46,9 @@ object LR {
         val cvModel: CrossValidatorModel = cv.fit(Preprocessing.trainingData)
 
         // save the workFlow
-        cvModel.write.overwrite().save("model/LR_model")
+//        cvModel.write.overwrite().save("model/LR_model")
         // Load the workFlow back
-        val saveCV = CrossValidatorModel.load("model/LR_model")
+//        val saveCV = CrossValidatorModel.load("model/LR_model")
 
         println("Evaluating model on train and validation set and calculating RMSE")
         val trainPredictionsAndLabels = cvModel.transform(Preprocessing.trainingData)
@@ -74,24 +75,35 @@ object LR {
           s"TestData count: ${Preprocessing.testData.count}\n" +
           "=====================================================================\n" +
           s"Param maxIter = ${MaxIter.mkString(",")}\n" +
-          s"Param numFolds = ${numFolds}\n" +
+          s"Param numFolds = $numFolds\n" +
           "=====================================================================\n" +
           s"Training data MSE = ${trainRegressionMetrics.meanSquaredError}\n" +
-          s"Training data MSE = ${trainRegressionMetrics.rootMeanSquaredError}\n" +
-          s"Training data MSE = ${trainRegressionMetrics.r2}\n" +
-          s"Training data MSE = ${trainRegressionMetrics.meanAbsoluteError}\n" +
-          s"Training data MSE = ${trainRegressionMetrics.explainedVariance}\n" +
+          s"Training data RMSE = ${trainRegressionMetrics.rootMeanSquaredError}\n" +
+          s"Training data R-squared = ${trainRegressionMetrics.r2}\n" +
+          s"Training data MAE = ${trainRegressionMetrics.meanAbsoluteError}\n" +
+          s"Training data Explained Variance = ${trainRegressionMetrics.explainedVariance}\n" +
           "=====================================================================\n" +
           s"Validation data MSE = ${validRegressionMetrics.meanSquaredError}\n" +
-          s"Validation data MSE = ${validRegressionMetrics.rootMeanSquaredError}\n" +
-          s"Validation data MSE = ${validRegressionMetrics.r2}\n" +
-          s"Validation data MSE = ${validRegressionMetrics.meanAbsoluteError}\n" +
-          s"Validation data MSE = ${validRegressionMetrics.explainedVariance}\n" +
+          s"Validation data RMSE = ${validRegressionMetrics.rootMeanSquaredError}\n" +
+          s"Validation data R-squared = ${validRegressionMetrics.r2}\n" +
+          s"Validation data MAE = ${validRegressionMetrics.meanAbsoluteError}\n" +
+          s"Validation data Explained Variance = ${validRegressionMetrics.explainedVariance}\n" +
           s"CV param explained: ${cvModel.explainParams}\n" +
-          s"GBT params explained: ${bestModel.stages.last.asInstanceOf[LinearRegression].explainParams}\n" +
+          s"GBT params explained: ${bestModel.stages.last.asInstanceOf[LinearRegressionModel].explainParams}\n" +
           "=====================================================================\n"
         println(results)
 
+        //
+        println("Run prediction on the test set")
+        cvModel.transform(Preprocessing.testData)
+          .select("id","prediction")
+          .withColumnRenamed("prediction","loss")
+          .coalesce(1) // 获取单个csv文件中的全部预测
+          .write.format("com.databricks.spark.csv")
+          .option("header","true")
+          .save("output/result_LR.csv")
+
+        spark.stop()
     }
 
 }

@@ -1,3 +1,4 @@
+import org.apache.spark.ml.feature.{StringIndexer, StringIndexerModel, VectorAssembler}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 
 object Preprocessing {
@@ -49,7 +50,7 @@ object Preprocessing {
     // 识别分类列(数据集分 分类列与数据列)
     def isCateg(c: String): Boolean = c.startsWith("cat")
 
-    def categNewCol(c: String): String = if (isCateg(c)) s"idx_${c}" else c
+    def categNewCol(c: String): String = if (isCateg(c)) s"idx_$c" else c
 
     // 删除太多类别的列
     def removeTooManyCategs(c: String): Boolean = !(c matches "cat(109$|110$|112$|113$|116$)")
@@ -67,7 +68,7 @@ object Preprocessing {
       .map(c => new StringIndexer()
         .setInputCol(c) // 设置输入列
         .setOutputCol(categNewCol(c)) //设置输出列
-        .fit(trainInput.union(testInput.select(c)))
+        .fit(trainInput.select(c).union(testInput.select(c)))
       )
 
     // 将给定的列转换为单个向量列
