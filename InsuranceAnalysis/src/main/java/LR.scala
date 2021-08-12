@@ -23,7 +23,7 @@ object LR {
 
         println("Building ML pipeline") // 构建管道估计器
         val pipeline: Pipeline = new Pipeline()
-          .setStages((Preprocessing.stringIndexerStages :+ Preprocessing.assembler) :+ model)
+          .setStages((Preproessing.stringIndexerStages :+ Preproessing.assembler) :+ model)
 
         // 构建参数网格
         val paramGrid = new ParamGridBuilder()
@@ -43,7 +43,7 @@ object LR {
 
         println("Training model with Linear Regression algorithm")
         // 训练线性回归模型
-        val cvModel: CrossValidatorModel = cv.fit(Preprocessing.trainingData)
+        val cvModel: CrossValidatorModel = cv.fit(Preproessing.trainingData)
 
         // save the workFlow
 //        cvModel.write.overwrite().save("model/LR_model")
@@ -51,12 +51,12 @@ object LR {
 //        val saveCV = CrossValidatorModel.load("model/LR_model")
 
         println("Evaluating model on train and validation set and calculating RMSE")
-        val trainPredictionsAndLabels = cvModel.transform(Preprocessing.trainingData)
+        val trainPredictionsAndLabels = cvModel.transform(Preproessing.trainingData)
           .select("label", "prediction")
           .map { case Row(label: Double, prediction: Double) => (label, prediction) }
           .rdd
 
-        val validPredictionsAndLabels = cvModel.transform(Preprocessing.validationData)
+        val validPredictionsAndLabels = cvModel.transform(Preproessing.validationData)
           .select("label", "prediction")
           .map { case Row(label: Double, prediction: Double) => (label, prediction) }
           .rdd
@@ -68,11 +68,11 @@ object LR {
         val bestModel = cvModel.bestModel.asInstanceOf[PipelineModel]
 
         val results = "\n=====================================================================\n" +
-          s"Param trainSample: ${Preprocessing.trainSample}\n" +
-          s"Param testSample: ${Preprocessing.testSample}\n" +
-          s"TrainingData count: ${Preprocessing.trainingData.count}\n" +
-          s"ValidationData count: ${Preprocessing.validationData.count}\n" +
-          s"TestData count: ${Preprocessing.testData.count}\n" +
+          s"Param trainSample: ${Preproessing.trainSample}\n" +
+          s"Param testSample: ${Preproessing.testSample}\n" +
+          s"TrainingData count: ${Preproessing.trainingData.count}\n" +
+          s"ValidationData count: ${Preproessing.validationData.count}\n" +
+          s"TestData count: ${Preproessing.testData.count}\n" +
           "=====================================================================\n" +
           s"Param maxIter = ${MaxIter.mkString(",")}\n" +
           s"Param numFolds = $numFolds\n" +
@@ -95,7 +95,7 @@ object LR {
 
         //
         println("Run prediction on the test set")
-        cvModel.transform(Preprocessing.testData)
+        cvModel.transform(Preproessing.testData)
           .select("id","prediction")
           .withColumnRenamed("prediction","loss")
           .coalesce(1) // 获取单个csv文件中的全部预测

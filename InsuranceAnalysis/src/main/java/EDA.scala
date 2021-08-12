@@ -1,4 +1,4 @@
-import Preprocessing.trainInput
+import Preproessing.trainInput
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object EDA {
@@ -6,7 +6,7 @@ object EDA {
         val spark: SparkSession = SparkSessionCreate.createSession()
         import spark.implicits._
 
-        val df: DataFrame = Preprocessing.trainInput
+        val df: DataFrame = Preproessing.trainInput
         df.show()
 
         // df.printSchema() 显示dafaFrame的结构

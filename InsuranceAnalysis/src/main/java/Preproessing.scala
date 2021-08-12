@@ -1,7 +1,7 @@
 import org.apache.spark.ml.feature.{StringIndexer, StringIndexerModel, VectorAssembler}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 
-object Preprocessing {
+object Preproessing {
     val trainSample = 1.0
     val testSample = 1.0
     val train = "data/train.csv"

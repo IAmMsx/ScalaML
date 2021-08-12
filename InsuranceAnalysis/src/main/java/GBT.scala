@@ -13,7 +13,7 @@ object GBT {
 
         // 参数设置
         val NumTrees = Seq(5, 10, 15) // 树的数量
-        val MaxBins = Seq(5, 7, 9) // 最大分箱数
+        val MaxBins = Seq(23,27,30) // 最大分箱数
         val numFolds = 10 // 10折交叉验证
         val MaxIter = Seq(10) // 最大迭代次数
         val MaxDepth = Seq(10) // 树最大深度
@@ -22,7 +22,7 @@ object GBT {
         val model = new GBTRegressor().setFeaturesCol("features").setLabelCol("label")
 
         // 链接转换和预测器以构建管道
-        val pipeline = new Pipeline().setStages((Preprocessing.stringIndexerStages :+ Preprocessing.assembler) :+ model)
+        val pipeline = new Pipeline().setStages((Preproessing.stringIndexerStages :+ Preproessing.assembler) :+ model)
 
         println("Preparing K-fold Cross Validation and Grid Search")
         // 构建参数网格
@@ -41,15 +41,15 @@ object GBT {
 
         println("Training model with GradientBoostedTrees algorithm")
         // 训练GBT模型
-        val cvModel = cv.fit(Preprocessing.trainingData)
+        val cvModel = cv.fit(Preproessing.trainingData)
 
         println("Evaluating model on train and test data and calculating RMSE")
-        val trainPredictionsAndLabels = cvModel.transform(Preprocessing.trainingData)
+        val trainPredictionsAndLabels = cvModel.transform(Preproessing.trainingData)
           .select("label", "prediction")
           .map { case Row(label: Double, prediction: Double) => (label, prediction) }
           .rdd
 
-        val validPredictionsAndLabels = cvModel.transform(Preprocessing.validationData)
+        val validPredictionsAndLabels = cvModel.transform(Preproessing.validationData)
           .select("label", "prediction")
           .map { case Row(label: Double, prediction: Double) => (label, prediction) }
           .rdd
@@ -68,11 +68,11 @@ object GBT {
         println(FI_to_List_Sorted.mkString("Array(", ", ", ")"))
 
         val output = "\n=====================================================================\n" +
-          s"Param trainSample:${Preprocessing.trainSample}\n" +
-          s"Param testSample:${Preprocessing.testSample}\n" +
-          s"TrainingData count:${Preprocessing.trainingData.count}\n" +
-          s"validationData count:${Preprocessing.validationData.count}\n" +
-          s"testData count:${Preprocessing.testData.count}\n" +
+          s"Param trainSample:${Preproessing.trainSample}\n" +
+          s"Param testSample:${Preproessing.testSample}\n" +
+          s"TrainingData count:${Preproessing.trainingData.count}\n" +
+          s"validationData count:${Preproessing.validationData.count}\n" +
+          s"testData count:${Preproessing.testData.count}\n" +
           "=====================================================================\n" +
           s"Param maxIter = ${MaxIter.mkString(",")}\n" +
           s"Param maxDepth = ${MaxDepth.mkString(",")}\n" +
@@ -93,13 +93,13 @@ object GBT {
           s"CV param explained: ${cvModel.explainParams}\n" +
           s"GBT params explained: ${bestModel.stages.last.asInstanceOf[GBTRegressionModel].explainParams}\n" +
           s"GBT features importances:\n " +
-          s"${Preprocessing.featureCols.zip(FI_to_List_Sorted).map(t => s"\t${t._1} = ${t._2}").mkString("\n")}\n" +
+          s"${Preproessing.featureCols.zip(FI_to_List_Sorted).map(t => s"\t${t._1} = ${t._2}").mkString("\n")}\n" +
           "=====================================================================\n"
 
         println(output)
 
         println("Run prediction over test dataset")
-        cvModel.transform(Preprocessing.testData)
+        cvModel.transform(Preproessing.testData)
           .select("id","prediction")
           .withColumnRenamed("prediction","loss")
           .coalesce(1)
